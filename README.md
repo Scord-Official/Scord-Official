@@ -1,5 +1,12 @@
 ## Hi there 👋
 
+Scord Official! 
+
+This is the official Repo/Github Account for Scord Official. We are working on a singlefile-HTML openable Discord clone, so you can use it in school!
+
+Reach our team at: [Gmail Soon!]
+
+Pronouns: Blue Triball
 <!--
 **Scord-Official/Scord-Official** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 

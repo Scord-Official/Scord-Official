@@ -1,0 +1,17 @@
+# Simple Dockerfile for Codespaces / local dev
+FROM node:18-bullseye
+
+# Create app directory
+WORKDIR /workspace
+
+# Copy package files first for caching
+COPY package.json package-lock.json* ./
+
+# Install dependencies (prefer npm ci if lockfile present)
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install; fi
+
+# Copy the rest
+COPY . .
+
+EXPOSE 3000
+CMD ["npm", "start"]

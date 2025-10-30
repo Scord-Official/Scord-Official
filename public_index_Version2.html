@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Mini-Discord (Single-file)</title>
+<style>
+  :root{--bg:#0f1720;--panel:#0b1220;--muted:#9aa4b2;--accent:#5865F2;--danger:#ff6b6b}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  body{background:linear-gradient(180deg,#06121a 0%,var(--bg) 100%);color:#e6eef6;display:flex;align-items:stretch}
+  .app{display:grid;grid-template-columns:240px 1fr 220px;height:100vh;width:100%;gap:12px;padding:12px;box-sizing:border-box}
+  .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:10px;padding:12px;box-sizing:border-box;overflow:auto}
+  .sidebar{display:flex;flex-direction:column;gap:8px}
+  .server-head{display:flex;align-items:center;gap:8px}
+  .server-dot{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .channels{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+  .channel{padding:8px;border-radius:6px;cursor:pointer;color:var(--muted);display:flex;justify-content:space-between}
+  .channel.active{background:rgba(88,101,242,0.13);color:#fff}
+  .main{display:flex;flex-direction:column;height:100%}
+  .messages{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .message{display:flex;gap:8px;align-items:flex-start}
+  .avatar{width:40px;height:40px;border-radius:8px;background:#233244;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .msg-body{background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:8px}
+  .msg-meta{font-size:12px;color:var(--muted)}
+  .composer{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(255,255,255,0.02)}
+  .input{flex:1;border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
+  .btn{background:var(--accent);border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .right{display:flex;flex-direction:column;gap:8px}
+  .userinfo{display:flex;gap:8px;align-items:center}
+  .small{font-size:12px;color:var(--muted)}
+  .connect-row{display:flex;gap:8px;margin-bottom:8px}
+  .danger{background:var(--danger)}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#12202a;padding:10px 14px;border-radius:8px;color:var(--muted)}
+  @media(max-width:900px){.app{grid-template-columns:1fr} .right{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel sidebar">
+    <div class="server-head">
+      <div class="server-dot">M</div>
+      <div>
+        <div style="font-weight:700">Mini-Discord</div>
+        <div class="small">Single-file client</div>
+      </div>
+    </div>
+
+    <div style="margin-top:8px">
+      <div class="small">Server</div>
+      <div class="connect-row">
+        <input id="serverUrl" class="input" placeholder="wss://yourserver.example" value="" />
+        <button id="connectBtn" class="btn">Connect</button>
+      </div>
+      <div class="small">Name</div>
+      <input id="nameInput" class="input" placeholder="Your name" />
+    </div>
+
+    <div class="channels">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="small">Channels</div>
+        <button id="newChannel" class="btn" style="padding:6px;border-radius:6px">+</button>
+      </div>
+      <div id="channelsList"></div>
+    </div>
+  </div>
+
+  <div class="panel main">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div>
+        <div id="channelTitle" style="font-weight:700">#general</div>
+        <div class="small" id="channelSub">Welcome</div>
+      </div>
+      <div class="small" id="status">Disconnected</div>
+    </div>
+
+    <div id="messages" class="messages"></div>
+
+    <div class="composer">
+      <input id="messageInput" class="input" placeholder="Message #channel" />
+      <button id="sendBtn" class="btn">Send</button>
+      <button id="leaveBtn" class="btn danger" title="Disconnect">Leave</button>
+    </div>
+  </div>
+
+  <div class="panel right">
+    <div class="small">Users</div>
+    <div id="usersList"></div>
+    <hr style="border:0;border-top:1px solid rgba(255,255,255,0.02)" />
+    <div class="small">Settings</div>
+    <label class="small" style="margin-top:6px">Persist name</label>
+    <input type="checkbox" id="persistName" checked />
+    <div class="small" style="margin-top:10px">Tip: open this file directly in the browser or host on GitHub Pages. Set Server to your deployed server URL.</div>
+  </div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+/*
+ Single-file client:
+ - Connects via WebSocket to a server that understands JSON messages:
+   * {type:'join', name, channel}
+   * {type:'message', text, channel}
+ Server emits events:
+   * {type:'joined', clientId, users, channels}
+   * {type:'userlist', users}
+   * {type:'message', id, from, text, channel, time}
+   * {type:'channels', channels}
+   * {type:'history', channel, messages}
+   * {type:'error', message}
+*/
+(function(){
+  // UI elements
+  const serverUrlEl = document.getElementById('serverUrl');
+  const connectBtn = document.getElementById('connectBtn');
+  const nameInput = document.getElementById('nameInput');
+  const persistName = document.getElementById('persistName');
+  const newChannelBtn = document.getElementById('newChannel');
+  const channelsList = document.getElementById('channelsList');
+  const channelTitle = document.getElementById('channelTitle');
+  const channelSub = document.getElementById('channelSub');
+  const messagesEl = document.getElementById('messages');
+  const usersList = document.getElementById('usersList');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const leaveBtn = document.getElementById('leaveBtn');
+  const statusEl = document.getElementById('status');
+  const toast = document.getElementById('toast');
+
+  // state
+  let ws = null;
+  let clientId = null;
+  let currentChannel = 'general';
+  let channels = ['general'];
+  let users = [];
+  let serverUrl = '';
+  const storageKeyName = 'mini_discord_name';
+  const storageKeyServer = 'mini_discord_server';
+
+  // restore name/server
+  try {
+    const savedName = localStorage.getItem(storageKeyName);
+    if (savedName) nameInput.value = savedName;
+    const savedServer = localStorage.getItem(storageKeyServer);
+    if (savedServer) serverUrlEl.value = savedServer;
+  } catch(e){}
+
+  function showToast(text, ms=3500){
+    toast.textContent = text;
+    toast.style.display = 'block';
+    setTimeout(()=> toast.style.display='none', ms);
+  }
+
+  function setStatus(s){
+    statusEl.textContent = s;
+  }
+
+  function renderChannels(){
+    channelsList.innerHTML = '';
+    channels.forEach(ch=>{
+      const el = document.createElement('div');
+      el.className = 'channel' + (ch===currentChannel?' active':'');
+      el.textContent = '#'+ch;
+      el.onclick = ()=> joinChannel(ch);
+      channelsList.appendChild(el);
+    });
+  }
+
+  function renderUsers(){
+    usersList.innerHTML = '';
+    users.forEach(u=>{
+      const el = document.createElement('div');
+      el.style.display='flex'; el.style.justifyContent='space-between'; el.style.padding='6px 4px'
+      const left = document.createElement('div');
+      left.textContent = u.name;
+      const right = document.createElement('div');
+      right.className='small';
+      right.textContent = u.channel || '';
+      el.appendChild(left); el.appendChild(right);
+      usersList.appendChild(el);
+    });
+  }
+
+  function addMessage(m){
+    const row = document.createElement('div');
+    row.className = 'message';
+    const avatar = document.createElement('div');
+    avatar.className='avatar';
+    avatar.textContent = (m.from || '?')[0] || '?';
+    const body = document.createElement('div');
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    meta.textContent = (m.from || 'system') + (m.time ? ' • ' + new Date(m.time).toLocaleTimeString() : '');
+    const text = document.createElement('div');
+    text.className='msg-body';
+    text.textContent = m.text || '';
+    body.appendChild(meta); body.appendChild(text);
+    row.appendChild(avatar); row.appendChild(body);
+    messagesEl.appendChild(row);
+    // auto-scroll
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function joinChannel(ch){
+    currentChannel = ch;
+    channelTitle.textContent = '#'+ch;
+    channelSub.textContent = 'Channel: '+ch;
+    renderChannels();
+    messagesEl.innerHTML = ''; // clear view — history will arrive
+    // tell server
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({type:'join', name:getName(), channel:ch}));
+    } else {
+      // if offline, still switch channel locally
+    }
+  }
+
+  function getName(){ return nameInput.value.trim() || 'Anonymous'; }
+
+  connectBtn.addEventListener('click', ()=>{
+    if (ws) { showToast('Already connected'); return; }
+    serverUrl = serverUrlEl.value.trim();
+    if (!serverUrl) return showToast('Enter server URL (wss://...)');
+    // persist server URL
+    try { localStorage.setItem(storageKeyServer, serverUrl); } catch(e){}
+    connect(serverUrl);
+  });
+
+  leaveBtn.addEventListener('click', ()=>{
+    if (ws) {
+      ws.close();
+    }
+  });
+
+  newChannelBtn.addEventListener('click', ()=>{
+    const name = prompt('New channel name (no #)');
+    if (name) {
+      channels = Array.from(new Set([...channels, name]));
+      renderChannels();
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({type:'create_channel', channel:name}));
+        joinChannel(name);
+      } else {
+        joinChannel(name);
+      }
+    }
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+  messageInput.addEventListener('keydown', (e)=>{ if (e.key==='Enter') sendMessage(); });
+
+  nameInput.addEventListener('change', ()=>{
+    if (persistName.checked) {
+      try { localStorage.setItem(storageKeyName, nameInput.value); } catch(e){}
+    }
+  });
+
+  function sendMessage(){
+    const txt = messageInput.value.trim();
+    if (!txt) return;
+    const payload = {type:'message', text:txt, channel:currentChannel};
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(payload));
+      messageInput.value = '';
+    } else {
+      // Offline echo
+      addMessage({from:getName(), text:txt, time:Date.now()});
+      messageInput.value = '';
+    }
+  }
+
+  function connect(url){
+    try {
+      setStatus('Connecting...');
+      ws = new WebSocket(url);
+      ws.addEventListener('open', ()=>{
+        setStatus('Connected');
+        // join initial channel
+        ws.send(JSON.stringify({type:'join', name:getName(), channel:currentChannel}));
+        showToast('Connected');
+      });
+      ws.addEventListener('message', ev=>{
+        try {
+          const msg = JSON.parse(ev.data);
+          handleServerMessage(msg);
+        } catch(e){
+          console.warn('Bad msg', ev.data);
+        }
+      });
+      ws.addEventListener('close', ()=>{
+        setStatus('Disconnected');
+        ws = null;
+        showToast('Disconnected from server');
+      });
+      ws.addEventListener('error', (e)=>{
+        setStatus('Error');
+        console.error(e);
+        showToast('Connection error');
+      });
+    } catch(e){
+      setStatus('Failed');
+      showToast('Connect failed: '+e.message);
+    }
+  }
+
+  function handleServerMessage(msg){
+    switch(msg.type){
+      case 'joined':
+        clientId = msg.clientId;
+        users = msg.users || [];
+        channels = msg.channels || channels;
+        renderChannels();
+        renderUsers();
+        addMessage({from:'system', text:'You joined as '+getName(), time:Date.now()});
+        break;
+      case 'history':
+        // show previous messages for the channel
+        if (msg.channel === currentChannel && Array.isArray(msg.messages)) {
+          msg.messages.forEach(m => addMessage(m));
+        }
+        break;
+      case 'userlist':
+        users = msg.users || [];
+        renderUsers();
+        break;
+      case 'channels':
+        channels = msg.channels || channels;
+        renderChannels();
+        break;
+      case 'message':
+        // only show messages for current channel
+        if (!msg.channel || msg.channel === currentChannel) {
+          addMessage(msg);
+        }
+        break;
+      case 'typing':
+        // optional: show typing indicator (not implemented UI-wise)
+        break;
+      case 'error':
+        showToast('Server error: ' + (msg.message||''));
+        break;
+      default:
+        console.log('unknown', msg);
+    }
+  }
+
+  // Expose joinChannel for initial load
+  joinChannel(currentChannel);
+
+})();
+</script>
+</body>
+</html>

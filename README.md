@@ -29,10 +29,5 @@ Files included
 - README.md — this file
 
 Notes & next steps
-- This is a demo: data is in-memory only. Add SQLite/Postgres for persistence.
-- For public hosting, consider Replit/Render/Railway or a VPS; Codespaces is ephemeral.
-- If you want, I can:
-  - Add SQLite persistence (with migrations using Prisma), or
-  - Add simple OAuth (GitHub) for identity, or
-  - Make a GitHub Action that builds a zip artifact automatically.
+- Might be buggy, I coded some but Github Copilot was what made all the connection server stuff..
 ```

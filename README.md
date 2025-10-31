@@ -9,13 +9,13 @@ Quick summary
 Run in GitHub Codespaces (fork & run)
 1. Fork this repository to your GitHub account.
 2. Open your fork, click "Code" → "Codespaces" → "Create codespace on main".
-3. Wait for the codespace to initialize. The devcontainer will run `npm install`.
+3. Wait for the codespace to initialize. The devcontainer will run `npm install`. If it doesn't, run it in terminal.
 4. In Codespaces, open a terminal and press new terminal and type:
    npm start
 5. Open the Ports panel, hit forward a port, set to port 3000, click "Open in Browser" — that'll preview the app.
 6. Use the preview origin with wss:// for WebSocket connections (Codespaces handles TLS). In the client UI, paste the wss:// preview URL and click Connect.
 
-Run locally
+To Run locally
 - npm install
 - npm start
 - Visit http://localhost:3000 (if index.html is in public/) or open public/index.html directly and set Server to ws://localhost:3000

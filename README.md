@@ -14,6 +14,7 @@ Run in GitHub Codespaces (fork & run)
    npm start
 5. Open the Ports panel, hit forward a port, set to port 3000, click "Open in Browser" — that'll preview the app.
 6. Use the preview origin with wss:// for WebSocket connections (Codespaces handles TLS). In the client UI, paste the wss:// preview URL and click Connect.
+7. Admin commands are built in, so just log in with user localadmin. In the codespace console, look in server.js for the password and replace it with your password. People who try to log into the admin account without that pw will be temp ip banned from your server. You dont have to have it though.
 
 To Run locally
 - npm install

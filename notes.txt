@@ -1,0 +1,9 @@
+Hey! This is an Update Logs/Notes file. Feel free to delete this whenever you want. 
+
+1. Ensure to update your server, the codespace, each time a new version gets released to the github repo. 
+
+2. Updates are not required and as long as your client version meets your server version you will be fine, but we recomend updating each time for security purposes and to ensure you have all the latest features.
+
+UPD Logs:
+V.01 AlphaDev - Released public demo.
+V.01B AlphaDev - Experimental Admin permissions (localadmin for each server).

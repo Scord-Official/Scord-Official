@@ -1,34 +1,45 @@
 ```markdown
-# mini-discord-node — Fork & run in Codespaces or run locally
+# mini-discord-node — Admin password, admin panel, family-friendly config
 
-Quick summary
-- Minimal WebSocket + Express server that stores short message history per channel.
-- Single-file client at public/index.html (open directly or serve from the server).
-- Devcontainer + Dockerfile included for GitHub Codespaces.
+What's new
+- localadmin requires an admin password (popup) when chosen as a name.
+- Admin Panel (admins only) available from the right-side UI:
+  - View messages in the current channel, select messages and delete them.
+  - Kick, Ban (by name), IP Ban, Disconnect users.
+  - Impersonate: send messages as another user (via admin).
+  - Toggle Family Friendly mode and edit profanity list (saved to config.json).
+- Server persists non-secret config to config.json (you can edit it in Codespaces).
+- ADMIN_PASSWORD remains the secret — set it in your Codespace/Replit environment (do not commit).
 
-Run in GitHub Codespaces (fork & run)
-1. Fork this repository to your GitHub account.
-2. Open your fork, click "Code" → "Codespaces" → "Create codespace on main".
-3. Wait for the codespace to initialize. The devcontainer will run `npm install`. If it doesn't, run it in terminal.
-4. In Codespaces, open a terminal and press new terminal and type:
-   npm start
-5. Open the Ports panel, hit forward a port, set to port 3000, click "Open in Browser" — that'll preview the app.
-6. Use the preview origin with wss:// for WebSocket connections (Codespaces handles TLS). In the client UI, paste the wss:// preview URL and click Connect.
-7. Admin commands are built in, so just log in with user localadmin. In the codespace console, look in server.js for the password and replace it with your password. People who try to log into the admin account without that pw will be temp ip banned from your server. You dont have to have it though.
+How to enable admin password
+- Set ADMIN_PASSWORD in environment:
+  - Codespaces: set in repo / codespace environment or run in terminal: export ADMIN_PASSWORD="supersecret"
+  - Replit: add a secret in the Repl's Secrets section
+  - Local: export ADMIN_PASSWORD="supersecret" and start server
+- Optionally set ADMIN_USERS env (comma-separated) for name-based admin trust (insecure).
 
-To Run locally
-- npm install
-- npm start
-- Visit http://localhost:3000 (if index.html is in public/) or open public/index.html directly and set Server to ws://localhost:3000
+Config
+- config.json (created automatically on first run if missing) stores:
+  - familyFriendly: boolean
+  - profanity: array of words (used when familyFriendly==true)
+- Use config.example.json as a template. Changes from the Admin Panel persist to config.json.
 
-Files included
-- server.js — Node server with WebSocket and message history
-- public/index.html — single-file browser client
-- package.json — dependencies & start script
-- Dockerfile — for reproducible dev environment
-- .devcontainer/devcontainer.json — Codespaces / devcontainer config
-- README.md — this file
+Admin usage flow
+1. Open the client, set server (wss://...), choose name 'localadmin'.
+2. When prompted (popup), enter the ADMIN_PASSWORD to be granted admin privileges.
+3. Admin Panel button appears on the right — open it to manage users/messages/config.
 
-Notes & next steps
-- Might be buggy, I coded some but Github Copilot was what made all the connection server stuff..
+Notes & security
+- ADMIN_PASSWORD is required for granting admin rights at join; it's checked by the server.
+- Do NOT commit secrets to the repo. Keep ADMIN_PASSWORD in Codespaces / Replit secrets.
+- IP ban/mute/kick and impersonation are powerful operations — intended for demo/self-hosted runs.
+- Family-friendly filtering is a simple word-matching filter (not comprehensive).
+- For production: use proper authentication (OAuth/JWT), role storage in DB, stronger rate limiting, and avoid exposing IPs unless necessary.
+
+Files changed
+- server.js — admin actions & config persistence & family-friendly
+- public/index.html — admin panel, popup password prompt, impersonate, message selection
+- config.example.json — example config
+
+
 ```

@@ -238,17 +238,32 @@
     messagesEl.innerHTML = '';
   }
 
+  // Ensure admin password popup on connect when name is localadmin.
+  // This forces a prompt when the user clicks "Connect" and has chosen the special name.
+  function ensureAdminPasswordPrompt() {
+    try {
+      if (getName() === 'localadmin') {
+        // Always prompt when connecting as localadmin so a password is required to attempt admin auth.
+        // Use window.prompt for a simple popup; if the user cancels, we proceed without admin password.
+        const pw = window.prompt('Enter admin password for localadmin (leave blank to connect without admin):', '');
+        if (pw !== null && pw.length > 0) {
+          adminPasswordInput.value = pw;
+        } else {
+          // If user canceled or left blank, clear field so we don't send stale secrets
+          adminPasswordInput.value = '';
+        }
+      }
+    } catch (e) {
+      // ignore prompt failure
+    }
+  }
+
   function joinChannel(ch){
     currentChannel = ch;
     channelTitle.textContent = '#'+ch;
     channelSub.textContent = 'Channel: '+ch;
     renderChannels();
     clearMessages();
-    // if selecting localadmin name, show popup for password if password not already provided
-    if (getName() === 'localadmin' && !adminPasswordInput.value) {
-      const pw = prompt('Enter admin password for localadmin:');
-      if (pw) adminPasswordInput.value = pw;
-    }
     if (ws && ws.readyState === WebSocket.OPEN) {
       const payload = { type: 'join', name: getName(), channel: ch };
       const pwd = adminPasswordInput.value;
@@ -263,12 +278,14 @@
     if (ws) { showToast('Already connected'); return; }
     serverUrl = serverUrlEl.value.trim();
     if (!serverUrl) return showToast('Enter server URL (wss://...)');
+
     try { localStorage.setItem(storageKeyServer, serverUrl); } catch(e){}
-    // If user placed name localadmin but forgot to input password, prompt now
-    if (getName() === 'localadmin' && !adminPasswordInput.value) {
-      const pw = prompt('Enter admin password for localadmin:');
-      if (pw) adminPasswordInput.value = pw;
-    }
+
+    // Ensure the admin password popup appears when connecting as 'localadmin'.
+    // This always prompts (even if the admin password input already contains something),
+    // so the user explicitly enters the password at connect time.
+    ensureAdminPasswordPrompt();
+
     connect(serverUrl);
   });
 
@@ -317,7 +334,7 @@
     ws.send(JSON.stringify(Object.assign({ type: 'admin', action }, opts)));
   }
 
-  // Admin modal rendering
+  // Admin modal rendering (unchanged)
   function renderAdminPanel() {
     adminModalRoot.innerHTML = '';
     const backdrop = document.createElement('div');
@@ -523,7 +540,6 @@
         clientId = msg.clientId;
         users = msg.users || [];
         channels = msg.channels || channels;
-        // set admin state if server told us (joined payload doesn't include ip)
         const me = (msg.users || []).find(u => u.id === clientId);
         amIAdmin = !!(me && me.isAdmin);
         renderChannels();
@@ -540,7 +556,6 @@
         break;
       case 'userlist':
         users = msg.users || [];
-        // update my admin flag if present
         const me2 = users.find(u => u.id === clientId);
         amIAdmin = !!(me2 && me2.isAdmin);
         renderUsers();
@@ -556,7 +571,6 @@
         }
         break;
       case 'delete_message':
-        // remove from DOM and show system notice
         if (!msg.messageId) break;
         const el = document.querySelector('[data-message-id="' + msg.messageId + '"]');
         if (el) el.remove();

@@ -23,7 +23,7 @@ const ADMIN_USERS = new Set(
     .map(s => s.trim())
     .filter(Boolean)
 );
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || ''; // secret password — DO NOT COMMIT
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'REPLACE THIS PASSWORD'; // secret password — DO NOT COMMIT
 
 // Config file (non-secret settings)
 const CONFIG_PATH = path.join(__dirname, 'config.json');

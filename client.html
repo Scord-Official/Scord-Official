@@ -3,28 +3,41 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Mini-Discord (Single-file)</title>
+<title>SCORD</title>
 <style>
-  :root{--bg:#0f1720;--panel:#0b1220;--muted:#9aa4b2;--accent:#5865F2;--danger:#ff6b6b}
+  :root{
+    --bg:#071020;
+    --panel:#0b1220;
+    --muted:#9aa4b2;
+    --accent:#5865F2; /* blurple-like accent */
+    --accent-2:#4752c4;
+    --danger:#ff6b6b;
+    --card:#0e1622;
+    --glass: rgba(255,255,255,0.03);
+  }
   html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;}
-  body{background:linear-gradient(180deg,#06121a 0%,var(--bg) 100%);color:#e6eef6;display:flex;align-items:stretch}
+  body{background:linear-gradient(180deg,#05101a 0%,var(--bg) 100%);color:#e6eef6;display:flex;align-items:stretch}
   .app{display:grid;grid-template-columns:240px 1fr 320px;height:100vh;width:100%;gap:12px;padding:12px;box-sizing:border-box}
-  .panel{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:10px;padding:12px;box-sizing:border-box;overflow:auto}
+  .panel{background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.01));border-radius:10px;padding:12px;box-sizing:border-box;overflow:auto;backdrop-filter: blur(6px)}
   .sidebar{display:flex;flex-direction:column;gap:8px}
   .server-head{display:flex;align-items:center;gap:8px}
-  .server-dot{width:36px;height:36px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .server-dot{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .brand{display:flex;flex-direction:column}
+  .brand .name{font-weight:700;font-size:16px}
+  .brand .tag{font-size:12px;color:var(--muted)}
   .channels{margin-top:8px;display:flex;flex-direction:column;gap:6px}
   .channel{padding:8px;border-radius:6px;cursor:pointer;color:var(--muted);display:flex;justify-content:space-between}
-  .channel.active{background:rgba(88,101,242,0.13);color:#fff}
+  .channel.active{background:rgba(88,101,242,0.12);color:#fff}
   .main{display:flex;flex-direction:column;height:100%}
   .messages{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
   .message{display:flex;gap:8px;align-items:flex-start}
-  .avatar{width:40px;height:40px;border-radius:8px;background:#233244;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .avatar{width:40px;height:40px;border-radius:8px;background:#152233;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
   .msg-body{background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:8px}
   .msg-meta{font-size:12px;color:var(--muted)}
   .composer{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(255,255,255,0.02)}
   .input{flex:1;border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit}
-  .btn{background:var(--accent);border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn{background:linear-gradient(180deg,var(--accent),var(--accent-2));border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.03)}
   .right{display:flex;flex-direction:column;gap:8px}
   .userinfo{display:flex;gap:8px;align-items:center}
   .small{font-size:12px;color:var(--muted)}
@@ -32,23 +45,35 @@
   .danger{background:var(--danger)}
   .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#12202a;padding:10px 14px;border-radius:8px;color:var(--muted)}
   .admin-badge{font-size:11px;color:#fff;background:#444;padding:2px 6px;border-radius:6px;margin-left:6px}
-  /* Admin panel modal */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000}
-  .modal{width:900px;max-width:95%;background:#071020;border-radius:10px;padding:12px;box-shadow:0 8px 40px rgba(0,0,0,0.6);color:#e6eef6;max-height:90vh;overflow:auto}
-  .admin-grid{display:grid;grid-template-columns:1fr 320px;gap:12px}
-  .msg-row{display:flex;gap:8px;align-items:flex-start;padding:6px;border-bottom:1px solid rgba(255,255,255,0.02)}
+  /* Admin panel modal - pro style */
+  .modal-backdrop{position:fixed;inset:0;background:linear-gradient(rgba(2,6,23,0.6),rgba(2,6,23,0.6));display:flex;align-items:center;justify-content:center;z-index:1000}
+  .modal{width:960px;max-width:98%;background:linear-gradient(180deg,#071020,#091122);border-radius:12px;padding:14px;box-shadow:0 20px 60px rgba(6,8,20,0.8);color:#e6eef6;max-height:90vh;overflow:auto;border:1px solid rgba(88,101,242,0.12)}
+  .admin-grid{display:grid;grid-template-columns:430px 1fr;gap:14px}
+  .panel-card{background:var(--card);border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.02)}
+  .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .admin-left{display:flex;flex-direction:column;gap:8px}
+  .admin-rows{display:flex;flex-direction:column;gap:6px}
+  .msg-row{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:6px;border-bottom:1px solid rgba(255,255,255,0.02)}
+  .msg-row:hover{background:linear-gradient(90deg,rgba(88,101,242,0.02),transparent)}
+  .msg-row.selected{background:linear-gradient(90deg,rgba(88,101,242,0.08),transparent);box-shadow:inset 0 0 0 1px rgba(88,101,242,0.06)}
   .checkbox{margin-right:8px}
-  @media(max-width:900px){.app{grid-template-columns:1fr} .right{display:none}}
+  .admin-controls{display:flex;gap:8px;flex-wrap:wrap}
+  .small-muted{font-size:11px;color:#9aa4b2}
+  .thin{font-weight:300}
+  .right .section{margin-bottom:12px}
+  .user-row{display:flex;justify-content:space-between;align-items:center;padding:6px;border-radius:6px}
+  .muted-note{font-size:11px;color:#a3a3a3}
+  @media(max-width:900px){.app{grid-template-columns:1fr} .right{display:none} .modal{width:95%}}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="panel sidebar">
     <div class="server-head">
-      <div class="server-dot">M</div>
-      <div>
-        <div style="font-weight:700">Mini-Discord</div>
-        <div class="small">Single-file client</div>
+      <div class="server-dot">S</div>
+      <div class="brand">
+        <div class="name">SCORD</div>
+        <div class="tag small">chat • community</div>
       </div>
     </div>
 
@@ -58,7 +83,7 @@
         <input id="serverUrl" class="input" placeholder="wss://yourserver.example" value="" />
         <button id="connectBtn" class="btn">Connect</button>
       </div>
-      <div class="small">Name</div>
+      <div class="small">Display name</div>
       <input id="nameInput" class="input" placeholder="Your name" />
       <div class="small" style="margin-top:6px">Admin password (optional)</div>
       <input id="adminPassword" class="input" placeholder="admin password (if any)" type="password" />
@@ -67,7 +92,7 @@
     <div class="channels">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div class="small">Channels</div>
-        <button id="newChannel" class="btn" style="padding:6px;border-radius:6px">+</button>
+        <button id="newChannel" class="btn ghost" style="padding:6px;border-radius:6px">+</button>
       </div>
       <div id="channelsList"></div>
     </div>
@@ -77,12 +102,12 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div>
         <div id="channelTitle" style="font-weight:700">#general</div>
-        <div class="small" id="channelSub">Welcome</div>
+        <div class="small" id="channelSub">Welcome to SCORD</div>
       </div>
       <div class="small" id="status">Disconnected</div>
     </div>
 
-    <div id="messages" class="messages"></div>
+    <div id="messages" class="messages" aria-live="polite"></div>
 
     <div class="composer">
       <input id="messageInput" class="input" placeholder="Message #channel" />
@@ -96,7 +121,7 @@
       <div class="small">Users</div>
       <div id="adminPanelToggleHolder"></div>
     </div>
-    <div id="usersList"></div>
+    <div id="usersList" aria-live="polite"></div>
     <hr style="border:0;border-top:1px solid rgba(255,255,255,0.02)" />
     <div class="small">Settings</div>
     <label class="small" style="margin-top:6px">Persist name</label>
@@ -105,10 +130,10 @@
   </div>
 </div>
 
-<div id="toast" class="toast" style="display:none"></div>
+<div id="toast" class="toast" style="display:none" role="status" aria-live="polite"></div>
 
 <!-- Admin Modal (hidden by default) -->
-<div id="adminModal" style="display:none"></div>
+<div id="adminModal" style="display:none" aria-hidden="true"></div>
 
 <script>
 (function(){
@@ -141,8 +166,8 @@
   let serverUrl = '';
   let amIAdmin = false;
   let currentHistory = [];
-  const storageKeyName = 'mini_discord_name';
-  const storageKeyServer = 'mini_discord_server';
+  const storageKeyName = 'scord_name';
+  const storageKeyServer = 'scord_server';
 
   // restore name/server
   try {
@@ -197,11 +222,11 @@
         kickBtn.style.padding='4px 6px'; kickBtn.onclick = ()=> {
           if (confirm('Kick '+u.name+'?')) sendAdminAction('kick', { targetId: u.id });
         };
-        const banBtn = document.createElement('button'); banBtn.textContent='Ban'; banBtn.className='btn';
+        const banBtn = document.createElement('button'); banBtn.textContent='Ban'; banBtn.className='btn ghost';
         banBtn.style.padding='4px 6px'; banBtn.onclick = ()=> {
           if (confirm('Ban '+u.name+'?')) sendAdminAction('ban', { targetName: u.name });
         };
-        const ipBtn = document.createElement('button'); ipBtn.textContent='IP Ban'; ipBtn.className='btn';
+        const ipBtn = document.createElement('button'); ipBtn.textContent='IP Ban'; ipBtn.className='btn ghost';
         ipBtn.style.padding='4px 6px'; ipBtn.onclick = ()=> {
           if (!u.ip) return showToast('No IP available for that user (server may hide it).');
           if (confirm('IP ban '+u.ip+' (user '+u.name+')?')) sendAdminAction('ip_ban', { ip: u.ip });
@@ -217,7 +242,7 @@
   function addMessage(m){
     const row = document.createElement('div');
     row.className = 'message';
-    row.dataset.messageId = m.id || '';
+    if (m.id) row.dataset.messageId = m.id;
     const avatar = document.createElement('div');
     avatar.className='avatar';
     avatar.textContent = (m.from || '?')[0] || '?';
@@ -239,23 +264,17 @@
   }
 
   // Ensure admin password popup on connect when name is localadmin.
-  // This forces a prompt when the user clicks "Connect" and has chosen the special name.
   function ensureAdminPasswordPrompt() {
     try {
       if (getName() === 'localadmin') {
-        // Always prompt when connecting as localadmin so a password is required to attempt admin auth.
-        // Use window.prompt for a simple popup; if the user cancels, we proceed without admin password.
         const pw = window.prompt('Enter admin password for localadmin (leave blank to connect without admin):', '');
         if (pw !== null && pw.length > 0) {
           adminPasswordInput.value = pw;
         } else {
-          // If user canceled or left blank, clear field so we don't send stale secrets
           adminPasswordInput.value = '';
         }
       }
-    } catch (e) {
-      // ignore prompt failure
-    }
+    } catch (e) {}
   }
 
   function joinChannel(ch){
@@ -281,11 +300,7 @@
 
     try { localStorage.setItem(storageKeyServer, serverUrl); } catch(e){}
 
-    // Ensure the admin password popup appears when connecting as 'localadmin'.
-    // This always prompts (even if the admin password input already contains something),
-    // so the user explicitly enters the password at connect time.
     ensureAdminPasswordPrompt();
-
     connect(serverUrl);
   });
 
@@ -334,80 +349,83 @@
     ws.send(JSON.stringify(Object.assign({ type: 'admin', action }, opts)));
   }
 
-  // Admin modal rendering (unchanged)
+  // Admin modal rendering with pro-style layout (reworked)
   function renderAdminPanel() {
     adminModalRoot.innerHTML = '';
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
     const modal = document.createElement('div');
     modal.className = 'modal';
+    const header = document.createElement('div');
+    header.className = 'admin-header';
     const title = document.createElement('div');
-    title.style.display='flex'; title.style.justifyContent='space-between'; title.style.alignItems='center';
-    const h = document.createElement('h3'); h.textContent = 'Admin Panel';
+    title.innerHTML = '<strong>Moderation Panel</strong><div class="small-muted thin">manage messages, users and config</div>';
     const closeBtn = document.createElement('button'); closeBtn.className='btn'; closeBtn.textContent='Close';
     closeBtn.onclick = () => { adminModalRoot.style.display = 'none'; };
-    title.appendChild(h); title.appendChild(closeBtn);
-    modal.appendChild(title);
+    header.appendChild(title); header.appendChild(closeBtn);
+    modal.appendChild(header);
 
-    const grid = document.createElement('div');
-    grid.className = 'admin-grid';
+    const grid = document.createElement('div'); grid.className = 'admin-grid';
 
-    // Left: messages list (with checkboxes)
-    const left = document.createElement('div');
-    const lm = document.createElement('div'); lm.style.marginBottom='8px'; lm.textContent='Messages (current channel)';
-    left.appendChild(lm);
-    const reloadBtn = document.createElement('button'); reloadBtn.className='btn'; reloadBtn.textContent='Reload';
-    reloadBtn.onclick = loadHistory;
-    left.appendChild(reloadBtn);
-    const deleteSelBtn = document.createElement('button'); deleteSelBtn.className='btn'; deleteSelBtn.textContent='Delete selected';
-    deleteSelBtn.style.marginLeft='8px';
-    deleteSelBtn.onclick = deleteSelectedMessages;
-    left.appendChild(deleteSelBtn);
-    const msgsContainer = document.createElement('div'); msgsContainer.id='adminMsgs'; msgsContainer.style.marginTop='8px'; msgsContainer.style.maxHeight='60vh'; msgsContainer.style.overflow='auto';
+    // Left column: messages with select all
+    const left = document.createElement('div'); left.className='panel-card';
+    const leftTop = document.createElement('div'); leftTop.style.display='flex'; leftTop.style.justifyContent='space-between'; leftTop.style.alignItems='center';
+    const leftTitle = document.createElement('div'); leftTitle.innerHTML = '<strong>Messages</strong><div class="small-muted">current channel</div>';
+    const leftCtrls = document.createElement('div');
+    const selectAll = document.createElement('input'); selectAll.type='checkbox'; selectAll.title='Select all';
+    selectAll.onchange = (ev) => {
+      const boxes = document.querySelectorAll('#adminMsgs input[type=checkbox]');
+      boxes.forEach(b => b.checked = selectAll.checked);
+      document.querySelectorAll('#adminMsgs .msg-row').forEach((r,i)=> {
+        if (selectAll.checked) r.classList.add('selected'); else r.classList.remove('selected');
+      });
+    };
+    const reloadBtn = document.createElement('button'); reloadBtn.className='btn ghost'; reloadBtn.textContent='Reload'; reloadBtn.onclick = loadHistory;
+    const deleteSelBtn = document.createElement('button'); deleteSelBtn.className='btn'; deleteSelBtn.textContent='Delete selected'; deleteSelBtn.onclick = deleteSelectedMessages;
+    leftCtrls.appendChild(selectAll); leftCtrls.appendChild(reloadBtn); leftCtrls.appendChild(deleteSelBtn);
+    leftTop.appendChild(leftTitle); leftTop.appendChild(leftCtrls);
+    left.appendChild(leftTop);
+    const msgsContainer = document.createElement('div'); msgsContainer.id='adminMsgs'; msgsContainer.style.marginTop='10px'; msgsContainer.style.maxHeight='62vh'; msgsContainer.style.overflow='auto';
     left.appendChild(msgsContainer);
 
-    // Right: user actions + impersonate + config
-    const right = document.createElement('div');
-
-    // Users area: show current users and admin actions
-    const usersTitle = document.createElement('div'); usersTitle.textContent='Users';
+    // Right column: users / impersonate / config
+    const right = document.createElement('div'); right.className='panel-card';
+    // Users
+    const usersTitle = document.createElement('div'); usersTitle.innerHTML = '<strong>Users</strong>';
     right.appendChild(usersTitle);
-    const usersArea = document.createElement('div'); usersArea.id='adminUsers'; usersArea.style.marginBottom='12px';
-    right.appendChild(usersArea);
+    const usersArea = document.createElement('div'); usersArea.id='adminUsers'; usersArea.style.marginBottom='10px'; right.appendChild(usersArea);
 
-    // Impersonate form
-    const impTitle = document.createElement('div'); impTitle.textContent='Impersonate (send as other)';
-    impTitle.style.marginTop='8px';
-    right.appendChild(impTitle);
+    // impersonate
+    const impBox = document.createElement('div'); impBox.className='section';
+    impBox.innerHTML = '<div class="small-muted">Send a message as another user</div>';
     const asNameInput = document.createElement('input'); asNameInput.placeholder='username'; asNameInput.className='input';
     const asTextInput = document.createElement('input'); asTextInput.placeholder='message text'; asTextInput.className='input';
     const asChanInput = document.createElement('input'); asChanInput.placeholder='channel (optional)'; asChanInput.className='input';
-    const impBtn = document.createElement('button'); impBtn.className='btn'; impBtn.textContent='Send as user';
+    const impBtn = document.createElement('button'); impBtn.className='btn'; impBtn.textContent='Send';
     impBtn.onclick = () => {
       if (!asNameInput.value || !asTextInput.value) return showToast('asName and text required');
       sendAdminAction('impersonate', { asName: asNameInput.value, text: asTextInput.value, channel: asChanInput.value || currentChannel });
       showToast('Impersonation sent');
     };
-    right.appendChild(asNameInput); right.appendChild(asTextInput); right.appendChild(asChanInput); right.appendChild(impBtn);
+    impBox.appendChild(asNameInput); impBox.appendChild(asTextInput); impBox.appendChild(asChanInput); impBox.appendChild(impBtn);
+    right.appendChild(impBox);
 
-    // Config toggles
-    const cfgTitle = document.createElement('div'); cfgTitle.textContent='Server config';
-    cfgTitle.style.marginTop='12px';
-    right.appendChild(cfgTitle);
+    // config
+    const cfgBox = document.createElement('div'); cfgBox.className='section';
+    cfgBox.innerHTML = '<div class="small-muted">Server config</div>';
     const familyLabel = document.createElement('label'); familyLabel.className='small'; familyLabel.style.display='block';
-    const familyCheckbox = document.createElement('input'); familyCheckbox.type='checkbox'; familyCheckbox.style.marginRight='6px';
+    const familyCheckbox = document.createElement('input'); familyCheckbox.type='checkbox'; familyCheckbox.style.marginRight='8px';
     familyLabel.appendChild(familyCheckbox); familyLabel.appendChild(document.createTextNode('Family friendly mode'));
-    right.appendChild(familyLabel);
-    const profanityArea = document.createElement('textarea'); profanityArea.className='input'; profanityArea.style.height='120px'; profanityArea.style.width='100%';
+    const profanityArea = document.createElement('textarea'); profanityArea.className='input'; profanityArea.style.height='110px'; profanityArea.style.width='100%';
     profanityArea.placeholder = 'One profane word per line';
-    right.appendChild(profanityArea);
-    const saveCfgBtn = document.createElement('button'); saveCfgBtn.className='btn'; saveCfgBtn.textContent='Save config';
+    const saveCfgBtn = document.createElement('button'); saveCfgBtn.className='btn'; saveCfgBtn.textContent='Save';
     saveCfgBtn.onclick = () => {
       const prof = profanityArea.value.split('\n').map(s=>s.trim()).filter(Boolean);
       sendAdminAction('set_config', { config: { familyFriendly: !!familyCheckbox.checked, profanity: prof } });
       showToast('Config save requested');
     };
-    right.appendChild(saveCfgBtn);
+    cfgBox.appendChild(familyLabel); cfgBox.appendChild(profanityArea); cfgBox.appendChild(saveCfgBtn);
+    right.appendChild(cfgBox);
 
     grid.appendChild(left);
     grid.appendChild(right);
@@ -415,20 +433,22 @@
     backdrop.appendChild(modal);
     adminModalRoot.appendChild(backdrop);
     adminModalRoot.style.display = 'block';
+    adminModalRoot.setAttribute('aria-hidden', 'false');
 
-    // helper: populate messages and users
+    // helpers: populate messages and users
     function renderAdminMessages() {
       const c = document.getElementById('adminMsgs');
       c.innerHTML = '';
       currentHistory.forEach(m => {
         const row = document.createElement('div'); row.className = 'msg-row';
+        row.dataset.messageId = m.id;
         const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className='checkbox'; cb.dataset.messageId = m.id;
-        row.appendChild(cb);
+        cb.onchange = () => { row.classList.toggle('selected', cb.checked); };
         const meta = document.createElement('div'); meta.style.flex='1';
-        const metaTitle = document.createElement('div'); metaTitle.className='small'; metaTitle.textContent = `${m.from} • ${new Date(m.time).toLocaleString()} • ${m.id}`;
+        const metaTitle = document.createElement('div'); metaTitle.className='small-muted'; metaTitle.textContent = `${m.from} • ${new Date(m.time).toLocaleString()} • ${m.id}`;
         const metaText = document.createElement('div'); metaText.textContent = m.text;
         meta.appendChild(metaTitle); meta.appendChild(metaText);
-        row.appendChild(meta);
+        row.appendChild(cb); row.appendChild(meta);
         c.appendChild(row);
       });
     }
@@ -437,26 +457,25 @@
       const a = document.getElementById('adminUsers');
       a.innerHTML = '';
       users.forEach(u => {
-        const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='6px 0';
+        const row = document.createElement('div'); row.className='user-row';
         const left = document.createElement('div'); left.textContent = `${u.name} ${u.ip ? '('+u.ip+')' : ''}`;
-        const right = document.createElement('div');
+        const right = document.createElement('div'); right.style.display='flex'; right.style.gap='6px';
         const kick = document.createElement('button'); kick.className='btn'; kick.textContent='Kick'; kick.onclick = () => { if (confirm('Kick '+u.name+'?')) sendAdminAction('kick', { targetId: u.id }); };
-        const ban = document.createElement('button'); ban.className='btn'; ban.textContent='Ban'; ban.onclick = () => { if (confirm('Ban '+u.name+'?')) sendAdminAction('ban', { targetName: u.name }); };
-        const ipban = document.createElement('button'); ipban.className='btn'; ipban.textContent='IP Ban'; ipban.onclick = () => { if (!u.ip) return showToast('No IP'); if (confirm('IP ban '+u.ip+'?')) sendAdminAction('ip_ban', { ip: u.ip }); };
+        const ban = document.createElement('button'); ban.className='btn ghost'; ban.textContent='Ban'; ban.onclick = () => { if (confirm('Ban '+u.name+'?')) sendAdminAction('ban', { targetName: u.name }); };
+        const ipban = document.createElement('button'); ipban.className='btn ghost'; ipban.textContent='IP Ban'; ipban.onclick = () => { if (!u.ip) return showToast('No IP'); if (confirm('IP ban '+u.ip+'?')) sendAdminAction('ip_ban', { ip: u.ip }); };
         right.appendChild(kick); right.appendChild(ban); right.appendChild(ipban);
         row.appendChild(left); row.appendChild(right);
         a.appendChild(row);
       });
     }
 
-    // load initial data
+    // load history (from server REST) and config
     function loadHistory() {
       fetch('/messages/' + encodeURIComponent(currentChannel)).then(r => r.json()).then(js => {
         currentHistory = js.messages || [];
         renderAdminMessages();
       }).catch(e => showToast('History load failed'));
     }
-    // fetch config for UI
     function loadConfig() {
       fetch('/config').then(r => r.json()).then(js => {
         if (js && js.config) {
@@ -471,6 +490,7 @@
     loadConfig();
   }
 
+  // delete selected messages: collect checked boxes within adminMsgs
   function deleteSelectedMessages() {
     const checks = Array.from(document.querySelectorAll('#adminMsgs input[type=checkbox]:checked'));
     if (!checks.length) return showToast('No messages selected');
@@ -480,8 +500,11 @@
     sendAdminAction('delete_messages', { messageIds: ids });
     // optimistic remove from UI
     ids.forEach(id => {
-      const el = document.querySelector('[data-message-id="' + id + '"]');
+      const el = document.querySelector('#adminMsgs .msg-row[data-message-id="' + id + '"]');
       if (el) el.remove();
+      // also remove from main messages view if present
+      const mainEl = document.querySelector('[data-message-id="' + id + '"]');
+      if (mainEl) mainEl.remove();
     });
     showToast('Delete requested');
   }
@@ -590,7 +613,7 @@
     }
   }
 
-  // Expose joinChannel for initial load
+  // initial load
   joinChannel(currentChannel);
 
 })();
